@@ -1,10 +1,13 @@
 .data
+.half 12
+header: .space 54
 
-input: .space 1024000
-output: .space 1024000
-filedata: .space 1024000
-inputMessage: .asciiz "Podaj nazwe pliku \n"
 filename: .space 128
+inputMessage: .asciiz "Podaj nazwe pliku \n"
+
+
+
+
 
 .text
 .globl main 
@@ -26,15 +29,44 @@ main:
 	li $v0,13
 	la $a0, filename
 	li $a1, 0
-	la $a2,0    
+	li $a2,0    
 	syscall
 	
-	move $a0, $v0        # load file descriptor 	
+	move $s0, $v0        # save file descriptor 	
+	
+	##load header
+	move $a0,$s0
 	li $v0,14
-	la $a1,input
-	la $a2,1024000     # allocate space for the bytes loaded
+	la $a1,header
+	li $a2,54     # allocate space for the bytes loaded
 	syscall
 	
+	##test
+	##lw $s7,header+18
+	##mul $s7,$s7,3
+	##lw $s4,he4ader+22
+	
+	
+	
+	
+	##addi $a1,$a1,2
+		##la $t1,header+
+		lw $s1,header+2 ## file size
+	
+	##alocate memory for bmp data
+	li $v0,9
+	move $a0,$s1
+	syscall
+	move $s2,$v0
+	
+	
+	move $a0,$s0
+	li $v0,14
+	move $a1,$s2
+	addu $a2,$s1,$zero     # allocate space for the bytes loaded
+	syscall
+	
+	move $a0,$s0
 	li $v0, 16  # $a0 already has the file descriptor
     	syscall
 	
@@ -54,17 +86,36 @@ main:
 		li $v0,13
 		la $a0, filename
 		li $a1, 1
-		la $a2,0 
+		li $a2,0 
 		syscall
+		
+		
 		
 		move $a0, $v0        # load file descriptor 	
 		li $v0,15
-		la $a1,input
-		la $a2,1024000     # allocate space for the bytes to save  
+		la  $a1,header
+		li $a2,54     # allocate space for the bytes to save  
 		syscall
 		
 		li $v0, 16  # $a0 already has the file descriptor
     		syscall
+    		
+		li $v0,13
+		la $a0, filename
+		li $a1, 9
+		li $a2,0 
+		syscall
+		
+		move $a0, $v0        # load file descriptor 	
+		li $v0,15
+		move $a1,$s2
+		addu $a2,$s1,$zero     # allocate space for the bytes to save  
+		syscall
+		
+		li $v0, 16  # $a0 already has the file descriptor
+    		syscall
+    		
+    		
 	li  $v0,10
 	syscall 
 	
