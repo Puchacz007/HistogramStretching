@@ -41,18 +41,18 @@ main:
 	li $a2,54     # allocate space for the bytes loaded
 	syscall
 	
-	##test
-	##lw $s7,header+18
-	##mul $s7,$s7,3
-	##lw $s4,he4ader+22
+	
 	
 	
 	
 	
 	##addi $a1,$a1,2
 		##la $t1,header+
-		lw $s1,header+2 ## file size
+		lw $s1,header+2 ##  load file size
 	
+		lw $s2,header+18 ## load bitmap width
+		lw $s3,header+22  ## load bitmap height
+		lhu $s4,header+28 ## load bits per pixel (number of colors)
 	##alocate memory for bmp data
 	li $v0,9
 	move $a0,$s1
@@ -70,61 +70,61 @@ main:
 	li $v0, 16  # $a0 already has the file descriptor
     	syscall
 	
-	saveToFile:
+ saveToFile:
 	
-		la $a0,inputMessage
-		li $v0,4
-		syscall
+	la $a0,inputMessage
+	li $v0,4
+	syscall
 
-		li $v0,8
-		la $a0,filename
-		la $a1,128
-		syscall
+	li $v0,8
+	la $a0,filename
+	la $a1,128
+	syscall
 	
-		jal removeEndLine
+	jal removeEndLine
 		
-		li $v0,13
-		la $a0, filename
-		li $a1, 1
-		li $a2,0 
-		syscall
+	li $v0,13
+	la $a0, filename
+	li $a1, 1
+	li $a2,0 
+	syscall
 		
 		
 		
-		move $a0, $v0        # load file descriptor 	
-		li $v0,15
-		la  $a1,header
-		li $a2,54     # allocate space for the bytes to save  
-		syscall
+	move $a0, $v0        # load file descriptor 	
+	li $v0,15
+	la  $a1,header
+	li $a2,54     # allocate space for the bytes to save  
+	syscall
 		
-		li $v0, 16  # $a0 already has the file descriptor
-    		syscall
+	li $v0, 16  # $a0 already has the file descriptor
+    	syscall
     		
-		li $v0,13
-		la $a0, filename
-		li $a1, 9
-		li $a2,0 
-		syscall
+	li $v0,13
+	la $a0, filename
+	li $a1, 9
+	li $a2,0 
+	syscall
 		
-		move $a0, $v0        # load file descriptor 	
-		li $v0,15
-		move $a1,$s2
-		addu $a2,$s1,$zero     # allocate space for the bytes to save  
-		syscall
+	move $a0, $v0        # load file descriptor 	
+	li $v0,15
+	move $a1,$s2
+	addu $a2,$s1,$zero     # allocate space for the bytes to save  
+	syscall
 		
-		li $v0, 16  # $a0 already has the file descriptor
-    		syscall
+	li $v0, 16  # $a0 already has the file descriptor
+    	syscall
     		
     		
 	li  $v0,10
 	syscall 
 	
-	removeEndLine: ##removing newlines ymbol from the filename
+removeEndLine: ##removing newlines ymbol from the filename
 
-		lbu $t1,0($a0)
-		addi $a0,$a0,1
-		bne $t1,'\n',removeEndLine
+	lbu $t1,0($a0)
+	addi $a0,$a0,1
+	bne $t1,'\n',removeEndLine
 	
-		addi $a0,$a0,-1
-		sb $0,0($a0)	
-		jr $ra
+	addi $a0,$a0,-1
+	sb $0,0($a0)	
+	jr $ra
