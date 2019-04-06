@@ -1,6 +1,7 @@
 .data
 .half 12
-header: .space 54
+header: .space 138
+
 
 filename: .space 128
 inputMessage: .asciiz "Write filename to stretch its histogram \n"
@@ -39,7 +40,7 @@ loadFile:
 	move $a0,$s0
 	li $v0,14
 	la $a1,header
-	li $a2,54     # allocate space for the bytes loaded
+	li $a2,138     # allocate space for the bytes loaded
 	syscall
 	
 	
@@ -47,24 +48,25 @@ loadFile:
 	
 	
 	
-	##addi $a1,$a1,2
-		##la $t1,header+
-		lw $s1,header+2 ##  load file size
-	
-		lw $s2,header+18 ## load bitmap width
-		lw $s3,header+22  ## load bitmap height
-		lhu $s4,header+28 ## load bits per pixel (number of colors)
-	##alocate memory for bmp data
-	li $v0,9
-	move $a0,$s1
+	#addi $a1,$a1,2
+		
+		lw $s1,header+2 # load file size
+		lw $s7,header+10 ## load offset
+		##lw $s2,header+18 # load bitmap width
+		lw $s3,header+22  # load bitmap height
+		lhu $s4,header+28 # load bits per pixel (number of colors)
+		lw $s5,header+34 #load size of the data section
+	#alocate memory for bmp data
+	li $v0,9 # allocate heap memory for pixel data
+	move $a0,$s5 
 	syscall
-	move $s2,$v0
+	move $s2,$v0 #  pixel array save to $s5
 	
 	
-	move $a0,$s0
+	move $a0,$s0 #load file descriptor
 	li $v0,14
-	move $a1,$s2
-	addu $a2,$s1,$zero     # allocate space for the bytes loaded
+	move	$a1, $s2 # load base adress of pixel array
+	move	$a2, $s5  # load size of data section
 	syscall
 	
 	move $a0,$s0
@@ -95,7 +97,7 @@ loadFile:
 	move $a0, $v0        # load file descriptor 	
 	li $v0,15
 	la  $a1,header
-	li $a2,54     # allocate space for the bytes to save  
+	move $a2,$s7     # allocate space for the bytes to save  
 	syscall
 		
 	li $v0, 16  # $a0 already has the file descriptor
@@ -110,7 +112,7 @@ loadFile:
 	move $a0, $v0        # load file descriptor 	
 	li $v0,15
 	move $a1,$s2
-	addu $a2,$s1,$zero     # allocate space for the bytes to save  
+	addu $a2,$s5,$zero   # allocate space for the bytes to save  
 	syscall
 		
 	li $v0, 16  # $a0 already has the file descriptor
