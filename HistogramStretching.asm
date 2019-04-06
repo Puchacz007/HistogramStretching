@@ -48,7 +48,7 @@ loadFile:
 	
 	
 	
-	#addi $a1,$a1,2
+	
 		
 		#lw $s1,header+2 # load file size
 		lw $s7,header+10 ## load offset
@@ -128,41 +128,44 @@ alpha:
 	move $t6,$s2 ## load pixel array adress
 	move $t9,$s5 ## load size of data
 	
-	sll $t8,$s4,3 
+	sll $t8,$s4,6
 	subi $t8,$t8,1 ## bigest color posible value
 	
 	subu $t3,$t3,$t0  ## max blue - min Blue
-	divu $t3,$t8,$t7 ## blue to multiply
+	#divu $t3,$t8,$t3 ## blue to divide
+	subu $t4,$t4,$t1  ## max green - min green
+	#divu $t4,$t8,$t4 ## green to divide
 	
-	subu $t7,$t4,$t1  ## max green - min green
-	divu $t4,$t8,$t7 ## green to multiply
-	
-	subu $t7,$t5,$t2  ## max red - min red
-	divu $t5,$t8,$t7 ## red to multiply
+	subu $t5,$t5,$t2  ## max red - min red
+	#divu $t5,$t8,$t5 ## red to divide
 	
 stretchHistogram:
 
 #blue
 	lbu $t7,0($t6)	 ## load color value		
 	subu $t7,$t7,$t0
-	mul $t7,$t7,$t3
+	mul $t7,$t7,$t8
+	divu $t7,$t7,$t3 ## blue to divide
 	sb $t7,0($t6)
 	addi $t6,$t6,1	
 #green
 	lbu $t7,0($t6)	 ## load color value		
 	subu $t7,$t7,$t1
-	mul $t7,$t7,$t4
+	mul $t7,$t7,$t8
+	divu $t7,$t7,$t4 ## green to divide
 	sb $t7,0($t6)
 	addi $t6,$t6,1	
 #red
 	lbu $t7,0($t6)	 ## load color value		
 	subu $t7,$t7,$t2
-	mul $t7,$t7,$t5
+	mul $t7,$t7,$t8
+	divu $t7,$t7,$t5 ## red to divide
+	
 	sb $t7,0($t6)
 	addi $t6,$t6,1	
 	
 #alpha
-	addu $t6,$t6,$s6
+	addu $t6,$t6,1
 	subu $t9,$t9,$s4 
 	bgtz $t9,stretchHistogram
 																																																																																	
