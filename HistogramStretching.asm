@@ -3,9 +3,9 @@
 header: .space 54
 
 filename: .space 128
-inputMessage: .asciiz "Podaj nazwe pliku \n"
-
-
+inputMessage: .asciiz "Write filename to stretch its histogram \n"
+outputMessage: .asciiz "Write fiilename to save image with streached histogram \n"
+errorMessage: .asciiz "File doesn't exist\n "
 
 
 
@@ -16,7 +16,7 @@ main:
 	la $a0,inputMessage
 	li $v0,4
 	syscall
-
+loadFile:
 	li $v0,8
 	la $a0,filename
 	la $a1,128
@@ -29,9 +29,10 @@ main:
 	li $v0,13
 	la $a0, filename
 	li $a1, 0
-	li $a2,0    
+	li $a2,0
+	    
 	syscall
-	
+ 	bltz $v0,loadError
 	move $s0, $v0        # save file descriptor 	
 	
 	##load header
@@ -72,7 +73,7 @@ main:
 	
  saveToFile:
 	
-	la $a0,inputMessage
+	la $a0,outputMessage
 	li $v0,4
 	syscall
 
@@ -128,3 +129,11 @@ removeEndLine: ##removing newlines ymbol from the filename
 	addi $a0,$a0,-1
 	sb $0,0($a0)	
 	jr $ra
+loadError:
+li $v0,4
+la $a0,errorMessage
+syscall
+li $v0,4
+la $a0,inputMessage
+syscall
+j loadFile
