@@ -54,9 +54,15 @@ loadFile:
 		lw $s7,header+10 ## load offset
 		##lw $s1,header+18 # load bitmap width
 		##lw $s3,header+22  # load bitmap height
+		## bits per pixet 1,2,4,8,16,24,32
 		lhu $s4,header+28 # load bits per pixel (number of colors)
-		srl $s4,$s4,3 ## change value to number of bytes per pixel
-		srl $s6,$s4,2 ## change value to number of bytes per color 
+		
+		
+		srl $s4,$s4,2 ## change value to number of bits per color
+		li $s1,8
+		div $s3,$s1,$s4 ##number of color per byte
+		subu $s1,$s1,$s4 ## number bits to shift left logical
+		##srl $s6,$s4,2 ## change value to number of bytes per color  //temp
 		lw $s5,header+34 #load size of the data section
 	#alocate memory for bmp data
 	li $v0,9 # allocate heap memory for pixel data
@@ -83,37 +89,67 @@ loadFile:
 	li $t5,0 # size of red max
 	move $t6,$s2 ## load pixel array adress
 	
+	li $t8,0 ## number of used bits in byte
 	move $t9,$s5 ## load size of data
 	# $s4 number of bits per color
-findMinMax:				
-	lbu $t7,0($t6)			
-	addi $t6,$t6,1
-	bge $t7,$t0,blueMax
+findMinMax:	
+				
+	lbu $t7,0($t6)
+	
+	srlv $t7,$t7,$t8 ## shift blue color bits to be least important
+	sllv $t7,$t7,$s1 ## remove other bits
+	srlv $t7,$t7,$s1 ## leave only important bits
+	addu $t8,$t8,$s4
+	bge $t7,$t0,increaseBlue
 	addu $t0,$t7,$zero
+increaseBlue:	
+	bne $t8,8,blueMax
+	addi $t6,$t6,1
+	li $t8,0
+	subi $t9,$t9,1
 blueMax:					
 	ble $t7,$t3,greenMin
 	addu $t3,$t7,$zero
 greenMin:
-	lbu $t7,0($t6)			
+	lbu $t7,0($t6)	
+	srlv $t7,$t7,$t8 ## shift blue color bits to be least important
+	sllv $t7,$t7,$s1 ## remove other bits
+	srlv $t7,$t7,$s1 ## leave only important bits
+	addu $t8,$t8,$s4		
+	bge $t7,$t1,increaseGreen
+	addu $t1,$t7,$zero	
+increaseGreen:	
+	bne $t8,8,greenMax
 	addi $t6,$t6,1
-	bge $t7,$t1,greenMax
-	addu $t1,$t7,$zero					
+	li $t8,0	
+	subi $t9,$t9,1			
 greenMax:					
 	ble $t7,$t4,redMin
 	addu $t4,$t7,$zero
 redMin:
 	lbu $t7,0($t6)			
-	addi $t6,$t6,1
-	bge $t7,$t2,redMax
+	srlv $t7,$t7,$t8 ## shift blue color bits to be least important
+	sllv $t7,$t7,$s1 ## remove other bits
+	srlv $t7,$t7,$s1 ## leave only important bits
+	addu $t8,$t8,$s4
+	bge $t7,$t2,increaseRed
 	addu $t2,$t7,$zero	
-					
+increaseRed:	
+	bne $t8,8,redMax
+	addi $t6,$t6,1
+	li $t8,0	
+	subi $t9,$t9,1				
 redMax:	
-	ble $t7,$t5,alpha
+	ble $t7,$t5,increaseAlpha
 	addu $t5,$t7,$zero	
-	
+
+increaseAlpha:	
+	addu $t8,$t8,$s4
+	bne $t8,8,alpha
+	addi $t6,$t6,1
+	subi $t9,$t9,1
+	li $t8,0
 alpha:
-	addu $t6,$t6,$s6
-	subu $t9,$t9,$s4 
 	bgtz $t9,findMinMax
 	
 	
@@ -127,9 +163,9 @@ alpha:
 	# $t5 size of red max	
 	move $t6,$s2 ## load pixel array adress
 	move $t9,$s5 ## load size of data
-	
-	sll $t8,$s4,6
-	subi $t8,$t8,1 ## bigest color posible value
+	li $s3,255
+	srlv $s3,$s3,$s1 ## bigest color posible value
+	##subi $t8,$t8,1
 	
 	subu $t3,$t3,$t0  ## max blue - min Blue
 	#divu $t3,$t8,$t3 ## blue to divide
@@ -138,35 +174,87 @@ alpha:
 	
 	subu $t5,$t5,$t2  ## max red - min red
 	#divu $t5,$t8,$t5 ## red to divide
-	
+	li $s6,0 ## byte to save
+	li $t8,0 ## number of used bits in byte
 stretchHistogram:
 
 #blue
-	lbu $t7,0($t6)	 ## load color value		
+	lbu $t7,0($t6)	 ## load color value	
+	srlv $t7,$t7,$t8 ## shift blue color bits to be least important
+	sllv $t7,$t7,$s1 ## remove other bits
+	srlv $t7,$t7,$s1 ## leave only important bits
+	addu $t8,$t8,$s4 ## increase number of used bits in byte
+
+	##histogram streching
 	subu $t7,$t7,$t0
-	mul $t7,$t7,$t8
+	mul $t7,$t7,$s3
 	divu $t7,$t7,$t3 ## blue to divide
-	sb $t7,0($t6)
-	addi $t6,$t6,1	
-#green
-	lbu $t7,0($t6)	 ## load color value		
+	
+	
+	addu $s6,$s6,$t7 ## add color number to save
+	bne $t8,8,green ## check if byte to save is full
+	sb $s6,0($t6)
+	addi $t6,$t6,1
+	li $t8,0 ## number of used bits in byte
+	li $s6,0 ## byte to save
+	subi $t9,$t9,1
+green:
+	lbu $t7,0($t6)	 ## load color value
+	srlv $t7,$t7,$t8 ## shift blue color bits to be least important
+	sllv $t7,$t7,$s1 ## remove other bits
+	srlv $t7,$t7,$s1 ## leave only important bits
+	addu $t8,$t8,$s4 ## increase number of used bits in byte
+	
+	##histogram streching		
 	subu $t7,$t7,$t1
-	mul $t7,$t7,$t8
+	mul $t7,$t7,$s3
 	divu $t7,$t7,$t4 ## green to divide
-	sb $t7,0($t6)
-	addi $t6,$t6,1	
-#red
+	
+	
+	addu $s6,$s6,$t7 ## add color number to save
+	bne $t8,8,red ## check if byte to save is full
+	sb $s6,0($t6)
+	addi $t6,$t6,1
+	li $t8,0 ## number of used bits in byte
+	li $s6,0 ## byte to save
+	subi $t9,$t9,1
+	
+red:
 	lbu $t7,0($t6)	 ## load color value		
+	srlv $t7,$t7,$t8 ## shift blue color bits to be least important
+	sllv $t7,$t7,$s1 ## remove other bits
+	srlv $t7,$t7,$s1 ## leave only important bits
+	addu $t8,$t8,$s4 ## increase number of used bits in byte
+	
+	##histogram streching	
 	subu $t7,$t7,$t2
-	mul $t7,$t7,$t8
+	mul $t7,$t7,$s3
 	divu $t7,$t7,$t5 ## red to divide
 	
-	sb $t7,0($t6)
-	addi $t6,$t6,1	
+	addu $s6,$s6,$t7 ## add color number to save
+	bne $t8,8,alphaSave ## check if byte to save is full
+	sb $s6,0($t6)
+	addi $t6,$t6,1
+	li $t8,0 ## number of used bits in byte
+	li $s6,0 ## byte to save
+	subi $t9,$t9,1
 	
-#alpha
-	addu $t6,$t6,1
-	subu $t9,$t9,$s4 
+alphaSave:
+	lbu $t7,0($t6)	 ## load alpha value		
+	srlv $t7,$t7,$t8 ## shift blue color bits to be least important
+	sllv $t7,$t7,$s1 ## remove other bits
+	srlv $t7,$t7,$s1 ## leave only important bits
+	addu $t8,$t8,$s4 ## increase number of used bits in byte
+
+	addu $s6,$s6,$t7 ## add color number to save
+	bne $t8,8,end ## check if byte to save is full
+	sb $s6,0($t6)
+	addi $t6,$t6,1
+	li $t8,0 ## number of used bits in byte
+	li $s6,0 ## byte to save
+	subi $t9,$t9,1
+	
+end:	
 	bgtz $t9,stretchHistogram
 																																																																																	
 saveToFile:
