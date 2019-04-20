@@ -72,9 +72,12 @@ loadFile:
 	##lw $s5,DIBHeader+20 #load size of the data section
 	mul $s5,$s3,$s4 ## number of pixels (width * height) each pixel is 3 byte 1 for each color for 24 bit image
 	#alocate memory for bmp data
+	andi $s1,$s3,3 ## rest of division by 4 from row size
 	li $v0,9 # allocate heap memory for pixel data
 	move $a0,$s5
 	mul $a0,$a0,3 
+	mul $t8,$s1,$s4
+	addu $a0,$a0,$t8
 	syscall
 	move $s2,$v0 #  pixel array save to $s2
 	
@@ -84,6 +87,8 @@ loadFile:
 	move	$a1, $s2 # load base adress of pixel array
 	move	$a2, $s5  # load size of data section
 	mul $a2,$a2,3 
+	mul $t8,$s1,$s4
+	addu $a2,$a2,$t8
 	syscall
 	
 	move $a0,$s0 #load file descriptor
@@ -103,7 +108,7 @@ loadFile:
 	# $s4 - height
 	#srl $t8, $s3, 2 
 
-	andi $t8,$s3,3 ## rest of division by 4 from row size
+	
 	li $s6, 1 ## pixel number in row
 	# $s4 number of bits per color
 findMinMax:	
@@ -167,13 +172,13 @@ redMax:
 #	subi $t9,$t9,1 ## decrease number of bytes in pixel data 
 padding1:
 	bne $s6, $s3, decreasePixels	# jesli licznik pikseli w wierszu != width
-	addu $t6,$t6,$t8 ## append padding 
+	addu $t6,$t6,$s1 ## append padding 
 	li $s6,0 ## go to next line
 decreasePixels:	
 	subi $t9,$t9,1	## decrease number of pixels
 	addi $s6, $s6, 1 # increase pixel number
 
-	bgtz $t9,findMinMax ## check if we checked all bytes from pixel data
+	bgtz $t9,findMinMax ## check if we checked all pixels from pixel data
 	
 	# $t0 size of blue min
 	# $t1 size of green min
@@ -188,7 +193,7 @@ decreasePixels:
 	subu $t3,$t3,$t0  ## max blue - min Blue
 	subu $t4,$t4,$t1  ## max green - min green
 	subu $t5,$t5,$t2  ## max red - min red
-	andi $t8,$s3,3 ## rest of division by 4 from row size
+	#andi $t8,$s3,3 ## rest of division by 4 from row size
 	li $s6, 1 ## pixel number in row
 	#li $s6,0 ## byte to save
 	#li $t8,0 ## number of used bits in byte
@@ -276,9 +281,9 @@ red:
 #	subi $t9,$t9,1 ## decrease number of bytes to normalize from pixel data
 	
 #end:
-padding2:
+#padding2:
 	bne $s6, $s3, decreasePixels2	# jesli licznik pikseli w wierszu != width
-	addu $t6,$t6,$t8 ## append padding 
+	addu $t6,$t6,$s1 ## append padding 
 	li $s6,0 ## go to next line
 decreasePixels2:	
 	subi $t9,$t9,1	## decrease number of pixels
@@ -342,6 +347,8 @@ saveToFile:
 	move $a1,$s2
 	addu $a2,$s5,$zero   # allocate space for the bytes to save  
 	mul $a2,$a2,3 
+	mul $t8,$s1,$s4
+	addu $a2,$a2,$t8
 	syscall
 		
 	li $v0, 16  # $a0 already has the file descriptor
